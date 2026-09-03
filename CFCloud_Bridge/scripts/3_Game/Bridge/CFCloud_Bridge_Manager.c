@@ -1,21 +1,19 @@
-// Central entry point of the mod. Lives in 3_Game (manager layer) and is driven
-// from 5_Mission by MissionServer / MissionGameplay.
-// Note: 3_Game must not reference 4_World types (PlayerBase, ItemBase, EntityAI).
-// Entity-facing work belongs in a future 4_World class that calls into this one.
+// Holds the mod's settings and nothing else. There is no tick and no polling:
+// the mod only ever reacts to orders that arrive through GameLabs.
+//
+// GLActionRegisterHook() runs from the MissionServer constructor, which is
+// earlier than MissionServer.OnInit(). An action could therefore ask for
+// settings before Init() ever ran, so GetInstance() initialises on first use.
 class CFCloud_Bridge_Manager
 {
 	private static ref CFCloud_Bridge_Manager s_Instance;
 
 	private ref CFCloud_Bridge_Settings m_Settings;
 	private bool m_Initialized;
-	private bool m_IsServer;
-	private float m_Accumulator;
 
 	void CFCloud_Bridge_Manager()
 	{
 		m_Initialized = false;
-		m_IsServer = false;
-		m_Accumulator = 0;
 	}
 
 	static CFCloud_Bridge_Manager GetInstance()
@@ -23,12 +21,10 @@ class CFCloud_Bridge_Manager
 		if (!s_Instance)
 			s_Instance = new CFCloud_Bridge_Manager();
 
-		return s_Instance;
-	}
+		if (!s_Instance.IsInitialized())
+			s_Instance.Init();
 
-	CFCloud_Bridge_Settings GetSettings()
-	{
-		return m_Settings;
+		return s_Instance;
 	}
 
 	bool IsInitialized()
@@ -36,58 +32,21 @@ class CFCloud_Bridge_Manager
 		return m_Initialized;
 	}
 
-	void Init(bool isServer)
+	CFCloud_Bridge_Settings GetSettings()
+	{
+		return m_Settings;
+	}
+
+	void Init()
 	{
 		if (m_Initialized)
 			return;
 
-		m_IsServer = isServer;
 		m_Settings = CFCloud_Bridge_Settings.Load();
 		CFCloud_Bridge_Logger.SetLevel(m_Settings.m_LogLevel);
 
 		m_Initialized = true;
 
-		string side = "CLIENT";
-		if (m_IsServer)
-			side = "SERVER";
-
-		CFCloud_Bridge_Logger.Info("Initialized on " + side + " - version " + CFCLOUD_BRIDGE_VERSION);
-
-		if (!m_Settings.m_Enabled)
-			CFCloud_Bridge_Logger.Warning("Bridge is disabled in Settings.json - nothing will be transferred.");
-	}
-
-	void OnUpdate(float timeslice)
-	{
-		if (!m_Initialized)
-			return;
-
-		if (!m_Settings.m_Enabled)
-			return;
-
-		m_Accumulator = m_Accumulator + timeslice;
-
-		if (m_Accumulator < m_Settings.m_UpdateIntervalSeconds)
-			return;
-
-		m_Accumulator = 0;
-		OnTick();
-	}
-
-	// Called once per m_UpdateIntervalSeconds while the bridge is enabled.
-	void OnTick()
-	{
-		CFCloud_Bridge_Logger.Debug("Tick");
-	}
-
-	void Shutdown()
-	{
-		if (!m_Initialized)
-			return;
-
-		CFCloud_Bridge_Logger.Info("Shutting down.");
-
-		m_Initialized = false;
-		m_Settings = null;
+		CFCloud_Bridge_Logger.Info("Initialized - version " + CFCLOUD_BRIDGE_VERSION);
 	}
 }

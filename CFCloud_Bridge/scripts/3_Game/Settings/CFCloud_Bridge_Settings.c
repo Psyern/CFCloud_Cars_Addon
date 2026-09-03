@@ -3,11 +3,15 @@ class CFCloud_Bridge_Settings
 	// 0 = none, 1 = error, 2 = warning, 3 = info, 4 = debug
 	int m_LogLevel = 3;
 
-	// Master switch for the bridge. Off until the endpoint is configured.
-	bool m_Enabled = false;
+	// Master switches per action. Checked in Execute(), not at registration
+	// time - GLActionRegisterHook() runs from the MissionServer constructor,
+	// before these settings are loaded.
+	bool m_AllowUnlock = true;
+	bool m_AllowLock = true;
 
-	// Seconds between two bridge ticks.
-	int m_UpdateIntervalSeconds = 60;
+	// Reassigning ownership reaches deep, so it stays off until an admin
+	// deliberately turns it on.
+	bool m_AllowSetOwner = false;
 
 	void MakeDirectoryIfNotExists()
 	{
@@ -32,9 +36,6 @@ class CFCloud_Bridge_Settings
 
 		if (m_LogLevel > CFCloud_Bridge_Logger.LEVEL_DEBUG)
 			m_LogLevel = CFCloud_Bridge_Logger.LEVEL_DEBUG;
-
-		if (m_UpdateIntervalSeconds < 5)
-			m_UpdateIntervalSeconds = 5;
 	}
 
 	static CFCloud_Bridge_Settings Load()
@@ -46,6 +47,13 @@ class CFCloud_Bridge_Settings
 		{
 			JsonFileLoader<CFCloud_Bridge_Settings>.JsonLoadFile(CFCLOUD_BRIDGE_CONFIG_FILE, settings);
 			settings.Validate();
+
+			// Write the file back so it always matches the current schema.
+			// Fields added since the file was created appear with their
+			// defaults, fields that no longer exist disappear. Without this an
+			// admin edits keys the mod stopped reading, or never sees the new
+			// ones at all.
+			settings.Save();
 			return settings;
 		}
 

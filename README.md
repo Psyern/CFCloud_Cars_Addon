@@ -29,10 +29,18 @@
 
 ## Status
 
-> **Work in progress.** This repository currently contains the mod skeleton — config,
-> script layers, logger and settings. The GameLabs actions described under *Planned
-> functionality* are specified and approved but **not yet implemented**. The design
-> document and the underlying audits are kept outside this repository.
+> **v0.2.1 — runs on a server.** Packed with Addon Builder and started on a DayZ 1.29
+> test server alongside GameLabs and DayZ Expansion: the Mission module compiles, the
+> five actions register with GameLabs before it posts its action list to CFCloud, and
+> the mod initialises without warnings.
+>
+> ```
+> 01:05:52 [CFCloud_Bridge] [INFO] Registered 5 actions, 30 known to GameLabs in total.
+> 01:05:59 [CFCloud_Bridge] [INFO] Initialized - version 0.2.1
+> ```
+>
+> What is **not** yet proven is the in-game behaviour of each action — see *Acceptance*.
+> The design document and the underlying audits are kept outside this repository.
 
 ---
 
@@ -45,9 +53,9 @@ CFCloud_Cars_Addon/                 ← repository root (this README)
 │   ├── config.cpp                  ← CfgPatches + CfgMods, script layer registration
 │   ├── stringtable.csv             ← localisation (full 15-column layout)
 │   └── scripts/
-│       ├── Common/                 ← compiled into every layer
 │       ├── 3_Game/                 ← logger, settings, constants, manager
-│       └── 5_Mission/              ← MissionServer hook, GameLabs actions
+│       ├── 4_World/GameLabs/       ← aircraft tracking hook, action base class
+│       └── 5_Mission/              ← MissionServer hook, the five actions
 ├── LICENSE
 └── NOTICE                          ← required mods and why nothing is redistributed
 ```
@@ -65,7 +73,7 @@ This mod closes that gap.
 
 ---
 
-## Planned functionality
+## Functionality
 
 Five Dynamic Actions, all server-side:
 
@@ -74,7 +82,7 @@ Five Dynamic Actions, all server-side:
 | **Unlock vehicle** | vehicle | Opens an Expansion-locked vehicle, key pairing left intact |
 | **Lock vehicle (admin)** | vehicle | Force-locks a vehicle; the owner's key cannot undo it |
 | **Vehicle status** | vehicle | Logs lock state, key pairing, persistent IDs and owner |
-| **Set vehicle owner** | vehicle | Reassigns ownership, handles the keychain case |
+| **Set vehicle owner** | vehicle | Reassigns ownership (target player must be online), handles the keychain case |
 | **Player's vehicles** | player | Lists every vehicle owned by that player |
 
 Plus **entity tracking for Expansion aircraft**: GameLabs only tracks `CarScript` and
@@ -100,24 +108,33 @@ registers them, which makes them visible on the CFCloud map as well.
 | DayZ Expansion — **Vehicles** module | required — the lock system lives there, not in Expansion Core |
 | CFTools Cloud | an active application grant for the server |
 
-Both dependencies are guarded by preprocessor defines (`GAMELABS`,
-`EXPANSIONMODVEHICLE`). Missing either one does **not** break compilation — the mod
-loads and stays inert.
+Script references to both are guarded by preprocessor defines (`GAMELABS`,
+`EXPANSIONMODVEHICLE`), so a missing mod never breaks compilation of this one.
 
-`requiredAddons` is deliberately `{"DZ_Data"}` only. It orders configs; it does not
-guard script references, so it is the wrong tool for the job.
+`requiredAddons` is `{"DZ_Data", "GameLabs_Scripts"}`. The GameLabs entry is not
+decoration: it pins the order in which `modded class MissionServer` is merged. Without
+it this mod's class is applied before GameLabs', `GLActionRegisterHook()` does not exist
+yet, and the server refuses to compile the Mission module. GameLabs anchors its own
+`Z_Dependencies` addon the same way.
+
+The side effect is a hard dependency on GameLabs at config level. That matches reality —
+the mod does nothing without it — but it means "install it and it stays inert" is no
+longer a claim we can make for a server without GameLabs.
 
 ---
 
 ## Installation
 
-The mod is pure server-side logic — no items, no layouts, no sounds, no keybinds.
+The mod is pure server-side logic — no items, no layouts, no sounds, no keybinds — so
+it belongs in **`-serverMod`**, next to GameLabs itself:
 
 ```bat
--mod=@CFCloud_Bridge;@GameLabs;@DayZExpansion...
+-serverMod=@GameLabs;@CFCloud_Bridge -mod=@DayZExpansion...
 ```
 
-It also runs as `-serverMod`, since clients need none of its content.
+Putting it in `-mod` also works, but has two drawbacks: clients then load this mod while
+GameLabs (a server-side mod) is absent on their side, and the PBO has to be signed to
+pass `verifySignatures=2`. Neither applies in `-serverMod`.
 
 Pack `CFCloud_Bridge/` with the DayZ Tools Addon Builder. `$PBOPREFIX$` must keep
 matching the folder name.
@@ -135,6 +152,33 @@ Written on first start to `$profile:CFCloud_Bridge\Config\Settings.json`.
 | `m_AllowLock` | `true` | Admin lock action enabled |
 | `m_AllowSetOwner` | `false` | Owner reassignment — off by default, it reaches deep |
 
+The file is rewritten on every load, so it always matches the current schema: options
+added by an update appear with their defaults, options that no longer exist disappear.
+
+---
+
+## Acceptance
+
+Enforce Script has no test framework, so these are checked on a running server.
+**Done:** the mod compiles, loads and registers its actions (see *Status*).
+**Open:**
+
+1. `GET /v1/server/{id}/GameLabs/actions` lists all five `CFCloudBridge_*` actions
+2. Unlock a locked car → open, lock sound, key still paired
+3. Sell that car on the P2P market → works (proves no `FORCEDUNLOCKED` was set)
+4. Admin-lock a car → `READY_TO_FORCELOCK`, then `FORCEDLOCKED` a tick later
+5. Try to unlock that car in game with the matching key → not possible
+6. Restart the server → unlocked state survives
+7. Spawn an Expansion helicopter → appears in `GET .../GameLabs/entities/vehicles`
+8. Start the server **without** Expansion Vehicles → the mod loads, compiles and stays
+   inert (`#ifdef EXPANSIONMODVEHICLE` covers this)
+9. Start the server **without** GameLabs → behaviour unverified. `requiredAddons` now
+   names `GameLabs_Scripts`, and whether DayZ treats a missing requiredAddon as a
+   warning or as a load failure has not been tested here
+
+Checks 3, 5 and 8 matter most: they cover the failures that would otherwise surface
+weeks later as a player complaint.
+
 ---
 
 ## Good to know
@@ -148,6 +192,12 @@ two read-only actions are only useful with server log access.
 `READY_TO_FORCELOCK` first and converts it in `UpdateLock()`. A status check fired
 immediately afterwards may still report the intermediate state — that is correct
 behaviour, not a bug.
+
+**Setting an owner needs the player online.** Expansion stores the owner as the DayZ
+UID (`PlayerIdentity.GetId()`), which cannot be derived from a SteamID64 by script —
+only a connected identity carries both. Writing a SteamID64 into that field would
+create an owner the game never recognises, so the action resolves a live identity or
+refuses.
 
 **Unlocking does not mark the vehicle as lockpicked.** Expansion uses the
 `FORCEDUNLOCKED` state as its "broken into" marker, and the P2P market refuses to sell
