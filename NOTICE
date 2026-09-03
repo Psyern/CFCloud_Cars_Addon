@@ -1,0 +1,55 @@
+CFCloud_Cars_Addon
+Copyright (c) 2026 Psyern / Deadmans Echo
+
+This product is licensed under version 3 of the GNU Affero General Public
+License (AGPL-3.0-only). See the LICENSE file for the full license text.
+SPDX-License-Identifier: AGPL-3.0-only
+
+===============================================================================
+Incorporated third-party work
+===============================================================================
+
+None.
+
+No third-party source code is copied into, bundled with, or redistributed as
+part of this mod. Every file in CFCloud_Bridge/ is original work.
+
+===============================================================================
+Required mods (interoperation only)
+===============================================================================
+
+This mod is useless on its own. At runtime it calls the public script APIs of
+two third-party mods, which server owners install separately from their
+original sources. Neither is redistributed here, and no code from either is
+copied into this repository.
+
+GameLabs (CFTools Cloud)
+  Copyright (c) CFTools Software GmbH
+  Source: https://github.com/CFToolsCloud/gamelabs-plugin-dayz
+  Used API: GameLabsContextAction, GameLabsActionContext,
+            GameLabsActionParameter, GetGameLabs(), MissionServer's
+            GLActionRegisterHook(), RegisterVehicle()/RemoveVehicle()
+  Guarded by the preprocessor define GAMELABS. Without GameLabs installed,
+  this mod compiles and loads, but registers nothing.
+
+DayZ Expansion
+  Copyright (c) DayZ Expansion Mod Team
+  Source: https://github.com/salutesh/DayZ-Expansion-Scripts
+  License of the original work: CC BY-NC-ND 4.0
+  Used API: ExpansionVehicle.Get(), ForceUnlock(), SetLockState(),
+            GetLockState(), HasKey(), AssignOwner(), and the enum
+            ExpansionVehicleLockState
+  Guarded by the preprocessor define EXPANSIONMODVEHICLE.
+
+  Note on CC BY-NC-ND: the NoDerivatives term restricts distributing modified
+  copies of Expansion. This mod distributes no Expansion code and modifies no
+  Expansion file. It only calls documented script entry points at runtime, the
+  same way any other server-side mod does.
+
+===============================================================================
+Documentation sources
+===============================================================================
+
+The design documents for this mod cite line numbers in the sources listed
+above for verification. Those citations are references, not redistribution;
+no source text from either project is reproduced in this repository.

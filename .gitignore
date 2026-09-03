@@ -1,0 +1,39 @@
+# Documentation and audits are kept locally, not in this repository
+CFCloud_Bridge_Doku/
+
+# Claude Code
+.claude/
+.superpowers/
+
+# Logs
+*.log
+Logs/
+log_*.txt
+runtime_*.txt
+
+# OS
+Thumbs.db
+Desktop.ini
+desktop.ini
+.DS_Store
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln
+*.csproj
+
+# DayZ Workbench / Addon Builder output
+*.pbo
+*.bisign
+*.bikey
+*.bat
+keys/
+build/
+@CFCloud_Bridge/
+
+# Profiles (generated at runtime)
+profiles/
