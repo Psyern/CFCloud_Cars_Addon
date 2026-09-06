@@ -29,14 +29,14 @@
 
 ## Status
 
-> **v0.2.1 — runs on a server.** Packed with Addon Builder and started on a DayZ 1.29
+> **v0.3.0 — runs on a server.** Packed with Addon Builder and started on a DayZ 1.29
 > test server alongside GameLabs and DayZ Expansion: the Mission module compiles, the
 > five actions register with GameLabs before it posts its action list to CFCloud, and
 > the mod initialises without warnings.
 >
 > ```
-> 01:05:52 [CFCloud_Bridge] [INFO] Registered 5 actions, 30 known to GameLabs in total.
-> 01:05:59 [CFCloud_Bridge] [INFO] Initialized - version 0.2.1
+> 01:30:22 [CFCloud_Bridge] [INFO] Registered 5 actions, 30 known to GameLabs in total.
+> 01:30:26 [CFCloud_Bridge] [INFO] Initialized - version 0.3.0
 > ```
 >
 > What is **not** yet proven is the in-game behaviour of each action — see *Acceptance*.
@@ -151,6 +151,7 @@ Written on first start to `$profile:CFCloud_Bridge\Config\Settings.json`.
 | `m_AllowUnlock` | `true` | Unlock action enabled |
 | `m_AllowLock` | `true` | Admin lock action enabled |
 | `m_AllowSetOwner` | `false` | Owner reassignment — off by default, it reaches deep |
+| `m_DiscordWebhookUrl` | `""` | Where action results are reported. Empty = server log only |
 
 The file is rewritten on every load, so it always matches the current schema: options
 added by an update appear with their defaults, options that no longer exist disappear.
@@ -166,6 +167,7 @@ Enforce Script has no test framework, so these are checked on a running server.
 1. `GET /v1/server/{id}/GameLabs/actions` lists all five `CFCloudBridge_*` actions
 2. Unlock a locked car → open, lock sound, key still paired
 3. Sell that car on the P2P market → works (proves no `FORCEDUNLOCKED` was set)
+3b. With `m_DiscordWebhookUrl` set, each action posts an embed to that channel
 4. Admin-lock a car → `READY_TO_FORCELOCK`, then `FORCEDLOCKED` a tick later
 5. Try to unlock that car in game with the matching key → not possible
 6. Restart the server → unlocked state survives
@@ -183,10 +185,16 @@ weeks later as a player complaint.
 
 ## Good to know
 
-**Results go to the server log, not to the interface.** The Data API answers a Dynamic
-Action with `204` — *queued*, not *executed* — and GameLabs marks the `output` response
-type as unavailable for general use. Unlock and lock are visible in game anyway; the
-two read-only actions are only useful with server log access.
+**The CFCloud interface cannot show action results — set a webhook instead.** This is
+not a limitation of this mod. `GameLabsActionResponse.Execute()` implements exactly one
+response type, `webhook`; the `output` type its own comment mentions has no
+implementation at all, and the Data API answers an action with `204` (*queued*, not
+*executed*). So clicking an action in CFCloud will always look like nothing happened.
+
+Put a Discord webhook URL in `m_DiscordWebhookUrl` and every action posts its result
+there as an embed — what it did or why it refused, plus the vehicle's state. Leave it
+empty and the server log stays the only output, which makes the two read-only actions
+(status, player's vehicles) effectively useless from the interface.
 
 **The admin lock takes effect one server tick later.** Expansion's own path sets
 `READY_TO_FORCELOCK` first and converts it in `UpdateLock()`. A status check fired

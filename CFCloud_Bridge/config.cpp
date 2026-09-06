@@ -28,7 +28,7 @@ class CfgMods
 		hidePicture = 1;
 		name = "CFCloud Bridge";
 		credits = "Deadman's Echo";
-		version = "0.2.1";
+		version = "0.3.0";
 		author = "Deadman's Echo";
 		authorID = "0";
 		extra = 0;

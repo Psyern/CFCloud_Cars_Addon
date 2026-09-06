@@ -42,6 +42,18 @@ class CFCloud_Bridge_VehicleActionBase extends GameLabsContextAction
 		return true;
 	}
 
+	//! Logs the outcome and mirrors it to the configured webhook. Returns the
+	//! value Execute() should return, so call sites stay one line.
+	protected bool CFCloud_Bridge_Outcome(bool success, string headline, string detail)
+	{
+		string text = headline + " " + detail;
+
+		CFCloud_Bridge_Logger.Warning(text);
+		CFCloud_Bridge_Report.Send(actionName, success, text);
+
+		return success;
+	}
+
 	protected string CFCloud_Bridge_YesNo(bool value)
 	{
 		if (value)

@@ -23,23 +23,20 @@ class CFCloud_Bridge_VehicleUnlock extends CFCloud_Bridge_VehicleActionBase
 		CFCloud_Bridge_Settings settings = CFCloud_Bridge_Manager.GetInstance().GetSettings();
 		if (!settings.m_AllowUnlock)
 		{
-			CFCloud_Bridge_Logger.Warning("Unlock refused, disabled in Settings.json. " + CFCloud_Bridge_Describe(vehicle, obj));
-			return false;
+			return CFCloud_Bridge_Outcome(false, "Entsperren abgelehnt: in Settings.json deaktiviert.", CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
 		// Without a paired key the vehicle has no lock at all. Forcing a state
 		// would claim a key that does not exist.
 		if (!vehicle.HasKey())
 		{
-			CFCloud_Bridge_Logger.Warning("Unlock refused, vehicle has no paired key. " + CFCloud_Bridge_Describe(vehicle, obj));
-			return false;
+			return CFCloud_Bridge_Outcome(false, "Entsperren abgelehnt: kein Schlüssel gepaart, das Fahrzeug hat kein Schloss.", CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
 		ExpansionVehicleLockState state = vehicle.GetLockState();
 		if (state != ExpansionVehicleLockState.LOCKED && state != ExpansionVehicleLockState.FORCEDLOCKED && state != ExpansionVehicleLockState.READY_TO_LOCK && state != ExpansionVehicleLockState.READY_TO_FORCELOCK)
 		{
-			CFCloud_Bridge_Logger.Info("Unlock skipped, vehicle is already open. " + CFCloud_Bridge_Describe(vehicle, obj));
-			return true;
+			return CFCloud_Bridge_Outcome(true, "Nichts zu tun: Fahrzeug ist bereits offen.", CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
 		// UNLOCKED, never ForceUnlock()'s FORCEDUNLOCKED default: Expansion
@@ -47,8 +44,7 @@ class CFCloud_Bridge_VehicleUnlock extends CFCloud_Bridge_VehicleActionBase
 		// then refuses to let the owner sell the vehicle.
 		vehicle.ForceUnlock(ExpansionVehicleLockState.UNLOCKED);
 
-		CFCloud_Bridge_Logger.Warning("Unlocked. " + CFCloud_Bridge_Describe(vehicle, obj));
-		return true;
+		return CFCloud_Bridge_Outcome(true, "Fahrzeug entsperrt.", CFCloud_Bridge_Describe(vehicle, obj));
 	}
 }
 

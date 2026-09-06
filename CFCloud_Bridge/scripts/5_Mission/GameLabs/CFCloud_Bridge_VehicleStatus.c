@@ -31,12 +31,11 @@ class CFCloud_Bridge_VehicleStatus extends CFCloud_Bridge_VehicleActionBase
 		if (_Vehicle.CastTo(glVehicle, context.GetReferencedObject()))
 			glRefKey = glVehicle.GetID();
 
-		string text = "Status: " + CFCloud_Bridge_Describe(vehicle, obj);
+		string text = CFCloud_Bridge_Describe(vehicle, obj);
 		text = text + " masterKey=" + vehicle.GetMasterKeyPersistentIDString();
 		text = text + " glRef=" + glRefKey;
 
-		CFCloud_Bridge_Logger.Warning(text);
-		return true;
+		return CFCloud_Bridge_Outcome(true, "Fahrzeug-Status:", text);
 	}
 }
 

@@ -36,10 +36,9 @@ class CFCloud_Bridge_PlayerVehicles extends CFCloud_Bridge_VehicleActionBase
 
 		string ownerUID = identity.GetId();
 
-		CFCloud_Bridge_Logger.Warning("Vehicles of " + identity.GetName() + " (" + identity.GetPlainId() + "):");
-
 		array<ref _Vehicle> tracked = GetGameLabs().GetVehicles();
 		int matches = 0;
+		string detail = "";
 
 		foreach (_Vehicle glVehicle : tracked)
 		{
@@ -55,11 +54,19 @@ class CFCloud_Bridge_PlayerVehicles extends CFCloud_Bridge_VehicleActionBase
 				continue;
 
 			matches++;
-			CFCloud_Bridge_Logger.Warning("  " + CFCloud_Bridge_Describe(vehicle, obj));
+
+			// Discord caps an embed description at 4096 characters. Keep the
+			// webhook readable and let the server log carry the full list.
+			if (detail.Length() < 3000)
+				detail = detail + " || " + CFCloud_Bridge_Describe(vehicle, obj);
 		}
 
-		CFCloud_Bridge_Logger.Warning("Total: " + matches.ToString() + " of " + tracked.Count().ToString() + " tracked vehicles.");
-		return true;
+		if (matches == 0)
+			detail = "keine";
+
+		string headline = identity.GetName() + " (" + identity.GetPlainId() + ") besitzt " + matches.ToString() + " von " + tracked.Count().ToString() + " erfassten Fahrzeugen:";
+
+		return CFCloud_Bridge_Outcome(true, headline, detail);
 	}
 }
 

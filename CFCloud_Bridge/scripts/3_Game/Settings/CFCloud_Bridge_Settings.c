@@ -13,6 +13,11 @@ class CFCloud_Bridge_Settings
 	// deliberately turns it on.
 	bool m_AllowSetOwner = false;
 
+	// Where action results are reported. The CFCloud interface cannot display
+	// them - GameLabs only implements the "webhook" response type. Empty means
+	// the server log stays the only output.
+	string m_DiscordWebhookUrl = "";
+
 	void MakeDirectoryIfNotExists()
 	{
 		if (!FileExist(CFCLOUD_BRIDGE_ROOT_FOLDER))

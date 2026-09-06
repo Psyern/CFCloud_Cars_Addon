@@ -4,7 +4,7 @@
 // declare every constant a second time ("Multiple declaration of variable").
 
 const string CFCLOUD_BRIDGE_NAME = "CFCloud_Bridge";
-const string CFCLOUD_BRIDGE_VERSION = "0.2.1";
+const string CFCLOUD_BRIDGE_VERSION = "0.3.0";
 
 // $profile: resolves to the -profiles folder on the server
 // and to %localappdata%\dayz on the client.

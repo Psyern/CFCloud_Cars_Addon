@@ -33,15 +33,13 @@ class CFCloud_Bridge_VehicleSetOwner extends CFCloud_Bridge_VehicleActionBase
 		CFCloud_Bridge_Settings settings = CFCloud_Bridge_Manager.GetInstance().GetSettings();
 		if (!settings.m_AllowSetOwner)
 		{
-			CFCloud_Bridge_Logger.Warning("Set owner refused, disabled in Settings.json. " + CFCloud_Bridge_Describe(vehicle, obj));
-			return false;
+			return CFCloud_Bridge_Outcome(false, "Besitzerwechsel abgelehnt: in Settings.json deaktiviert.", CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
 		string steamId = context.parameters.Get("steamId").GetString();
 		if (steamId == "")
 		{
-			CFCloud_Bridge_Logger.Warning("Set owner refused, no SteamID64 given. " + CFCloud_Bridge_Describe(vehicle, obj));
-			return false;
+			return CFCloud_Bridge_Outcome(false, "Besitzerwechsel abgelehnt: keine SteamID64 angegeben.", CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
 		array<Man> players = new array<Man>;
@@ -63,8 +61,7 @@ class CFCloud_Bridge_VehicleSetOwner extends CFCloud_Bridge_VehicleActionBase
 
 		if (!target)
 		{
-			CFCloud_Bridge_Logger.Warning("Set owner refused, no online player with SteamID64 " + steamId + ". " + CFCloud_Bridge_Describe(vehicle, obj));
-			return false;
+			return CFCloud_Bridge_Outcome(false, "Besitzerwechsel abgelehnt: kein Spieler mit SteamID64 " + steamId + " online.", CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
 		// When a keychain is attached, the owner lives on the keychain and the
@@ -77,8 +74,7 @@ class CFCloud_Bridge_VehicleSetOwner extends CFCloud_Bridge_VehicleActionBase
 		else
 			vehicle.AssignOwner(target);
 
-		CFCloud_Bridge_Logger.Warning("Owner set to " + target.GetName() + " (" + target.GetId() + "). " + CFCloud_Bridge_Describe(vehicle, obj));
-		return true;
+		return CFCloud_Bridge_Outcome(true, "Besitzer gesetzt auf " + target.GetName() + " (" + target.GetId() + ").", CFCloud_Bridge_Describe(vehicle, obj));
 	}
 }
 

@@ -23,21 +23,18 @@ class CFCloud_Bridge_VehicleLock extends CFCloud_Bridge_VehicleActionBase
 		CFCloud_Bridge_Settings settings = CFCloud_Bridge_Manager.GetInstance().GetSettings();
 		if (!settings.m_AllowLock)
 		{
-			CFCloud_Bridge_Logger.Warning("Lock refused, disabled in Settings.json. " + CFCloud_Bridge_Describe(vehicle, obj));
-			return false;
+			return CFCloud_Bridge_Outcome(false, "Sperren abgelehnt: in Settings.json deaktiviert.", CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
 		if (!vehicle.HasKey())
 		{
-			CFCloud_Bridge_Logger.Warning("Lock refused, vehicle has no paired key. " + CFCloud_Bridge_Describe(vehicle, obj));
-			return false;
+			return CFCloud_Bridge_Outcome(false, "Sperren abgelehnt: kein Schlüssel gepaart, das Fahrzeug hat kein Schloss.", CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
 		ExpansionVehicleLockState state = vehicle.GetLockState();
 		if (state == ExpansionVehicleLockState.FORCEDLOCKED || state == ExpansionVehicleLockState.READY_TO_FORCELOCK)
 		{
-			CFCloud_Bridge_Logger.Info("Lock skipped, vehicle is already admin-locked. " + CFCloud_Bridge_Describe(vehicle, obj));
-			return true;
+			return CFCloud_Bridge_Outcome(true, "Nichts zu tun: Fahrzeug ist bereits Admin-gesperrt.", CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
 		// Expansion's own Market module force-locks exactly like this: set the
@@ -46,8 +43,7 @@ class CFCloud_Bridge_VehicleLock extends CFCloud_Bridge_VehicleActionBase
 		// Setting FORCEDLOCKED directly would skip that.
 		vehicle.SetLockState(ExpansionVehicleLockState.READY_TO_FORCELOCK);
 
-		CFCloud_Bridge_Logger.Warning("Admin lock queued, becomes FORCEDLOCKED on the next server tick. " + CFCloud_Bridge_Describe(vehicle, obj));
-		return true;
+		return CFCloud_Bridge_Outcome(true, "Admin-Sperre gesetzt, wird im nächsten Server-Tick zu FORCEDLOCKED.", CFCloud_Bridge_Describe(vehicle, obj));
 	}
 }
 
