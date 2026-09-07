@@ -29,15 +29,19 @@
 
 ## Status
 
-> **v0.3.0 — runs on a server.** Packed with Addon Builder and started on a DayZ 1.29
-> test server alongside GameLabs and DayZ Expansion: the Mission module compiles, the
-> five actions register with GameLabs before it posts its action list to CFCloud, and
-> the mod initialises without warnings.
+> **v0.4.0 — Terje player-state actions added, not yet run on a server.** v0.3.0 was
+> packed with Addon Builder and started on a DayZ 1.29 test server alongside GameLabs
+> and DayZ Expansion: the Mission module compiles, the five vehicle actions register
+> with GameLabs before it posts its action list to CFCloud, and the mod initialises
+> without warnings.
 >
 > ```
 > 01:30:22 [CFCloud_Bridge] [INFO] Registered 5 actions, 30 known to GameLabs in total.
 > 01:30:26 [CFCloud_Bridge] [INFO] Initialized - version 0.3.0
 > ```
+>
+> The three Terje actions of v0.4.0 (status, set stat, heal) have been written against
+> the TerjeCore source but have not been compiled on a server yet.
 >
 > What is **not** yet proven is the in-game behaviour of each action — see *Acceptance*.
 > The design document and the underlying audits are kept outside this repository.
@@ -54,8 +58,8 @@ CFCloud_Cars_Addon/                 ← repository root (this README)
 │   ├── stringtable.csv             ← localisation (full 15-column layout)
 │   └── scripts/
 │       ├── 3_Game/                 ← logger, settings, constants, manager
-│       ├── 4_World/GameLabs/       ← aircraft tracking hook, action base class
-│       └── 5_Mission/              ← MissionServer hook, the five actions
+│       ├── 4_World/GameLabs/       ← aircraft tracking hook, action base classes
+│       └── 5_Mission/              ← MissionServer hook, the actions
 ├── LICENSE
 └── NOTICE                          ← required mods and why nothing is redistributed
 ```
@@ -75,7 +79,9 @@ This mod closes that gap.
 
 ## Functionality
 
-Five Dynamic Actions, all server-side:
+Eight fixed Dynamic Actions plus one generated per Terje stat, all server-side. The vehicle group needs DayZ Expansion
+Vehicles, the Terje group needs TerjeCore; each group is compiled only when its mod is
+present.
 
 | Action | Context | What it does |
 |---|---|---|
@@ -84,6 +90,31 @@ Five Dynamic Actions, all server-side:
 | **Vehicle status** | vehicle | Logs lock state, key pairing, persistent IDs and owner |
 | **Set vehicle owner** | vehicle | Reassigns ownership (target player must be online), handles the keychain case |
 | **Player's vehicles** | player | Lists every vehicle owned by that player |
+| **Terje status** | player | Lists every Terje stat with current value, maximum and the ID the set action takes |
+| **Terje set stat** | player | Sets one Terje stat by ID to an absolute value, clamped to Terje's own range. Generic path, mainly for the Data API |
+| **Terje heal** | player | Resets every Terje condition, the same full heal Terje offers to VPP/COT. Vanilla health, blood and shock are left alone |
+| **Terje: *&lt;stat&gt;* setzen** | player | **One action per registered Terje stat**, generated at startup from Terje's registry — the same list the COT compatibility module shows as sliders. Sleep, mind, every disease and wound counter, radiation buffer and sickness, every skill, souls. Only a value field |
+
+The per-stat actions follow Terje, not this mod: a Terje update that registers a new
+stat produces a new action on the next server start.
+
+### Terje stat IDs
+
+The set action takes the ID Terje registers in its admin-tool bridge
+(`TerjeCore/Scripts/4_World/Compatibility/TerjeAdmintoolSupport.c` and the module
+overrides). Which IDs exist depends on the Terje modules the server runs; the status
+action prints the live list. The common ones:
+
+| Module | ID | Meaning |
+|---|---|---|
+| Medicine | `terjeSleep` | Sleep (0 = exhausted, max = fully rested) |
+| Medicine | `terjeMind` | Mental state (0 = insane, max = stable) |
+| Medicine | `terjePain`, `terjeInfluenza`, `terjeSepsis`, `terjeZVirus`, `terjeRabies`, `terjePoison`, `terjeBiohazard`, `terjeOverdose`, `terjeContusion` | Diseases and conditions, 0 = healthy |
+| Medicine | `terjeBC`, `terjeBD`, `terjeBCS`, `terjeBDS`, `terjeCS`, `terjeDS`, `terjeHematomas`, `terjeStubs`, `terjeBullets`, `terjeViscera` | Wounds, bandages and sutures |
+| Radiation | `terjeRadiationAccum` | Absorbed dose buffer |
+| Radiation | `terjeRadiationSick` | Radiation sickness |
+| Skills | skill ID (e.g. `athletic`) | Skill level |
+| StartScreen | `terjeSouls` | Souls |
 
 Plus **entity tracking for Expansion aircraft**: GameLabs only tracks `CarScript` and
 `BoatScript`, so Expansion helicopters and planes never show up in CFCloud. This mod
@@ -105,11 +136,13 @@ registers them, which makes them visible on the CFCloud map as well.
 |---|---|
 | DayZ Server | 1.29 or newer |
 | [GameLabs](https://github.com/CFToolsCloud/gamelabs-plugin-dayz) | required — the mod registers nothing without it |
-| DayZ Expansion — **Vehicles** module | required — the lock system lives there, not in Expansion Core |
+| DayZ Expansion — **Vehicles** module | optional — enables the five vehicle actions; the lock system lives there, not in Expansion Core |
+| [TerjeCore](https://github.com/TerjeBruoygard/TerjeMods) | optional — enables the three Terje actions; Medicine, Radiation, Skills and StartScreen each add their own stats |
 | CFTools Cloud | an active application grant for the server |
 
-Script references to both are guarded by preprocessor defines (`GAMELABS`,
-`EXPANSIONMODVEHICLE`), so a missing mod never breaks compilation of this one.
+Script references to the optional mods are guarded by preprocessor defines
+(`GAMELABS`, `EXPANSIONMODVEHICLE`, `TERJE_CORE_MOD`), so a missing mod never breaks
+compilation of this one — the matching action group simply does not register.
 
 `requiredAddons` is `{"DZ_Data", "GameLabs_Scripts"}`. The GameLabs entry is not
 decoration: it pins the order in which `modded class MissionServer` is merged. Without
@@ -151,6 +184,8 @@ Written on first start to `$profile:CFCloud_Bridge\Config\Settings.json`.
 | `m_AllowUnlock` | `true` | Unlock action enabled |
 | `m_AllowLock` | `true` | Admin lock action enabled |
 | `m_AllowSetOwner` | `false` | Owner reassignment — off by default, it reaches deep |
+| `m_AllowTerjeSetStat` | `true` | Terje set-stat action enabled |
+| `m_AllowTerjeHeal` | `true` | Terje full-heal action enabled |
 | `m_DiscordWebhookUrl` | `""` | Where action results are reported. Empty = server log only |
 
 The file is rewritten on every load, so it always matches the current schema: options
@@ -206,6 +241,17 @@ UID (`PlayerIdentity.GetId()`), which cannot be derived from a SteamID64 by scri
 only a connected identity carries both. Writing a SteamID64 into that field would
 create an owner the game never recognises, so the action resolves a live identity or
 refuses.
+
+**The generic set-stat action takes the ID as text, not from a dropdown.** GameLabs'
+`options` data type is used by exactly one shipped action, and only with vector
+options; how the backend returns a selected string option is undocumented. For
+clicking in the interface, use the per-stat actions instead — they need no ID.
+
+**Reading Terje's registry in `GLActionRegisterHook()` is safe.** The vanilla
+`MissionBase` constructor runs `PluginManagerInit()`, which creates and initialises
+every plugin including Terje's settings plugin, before GameLabs' `MissionServer`
+constructor calls the hook. That is what makes the generated per-stat actions
+possible.
 
 **Unlocking does not mark the vehicle as lockpicked.** Expansion uses the
 `FORCEDUNLOCKED` state as its "broken into" marker, and the P2P market refuses to sell

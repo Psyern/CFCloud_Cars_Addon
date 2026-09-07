@@ -13,6 +13,12 @@ class CFCloud_Bridge_Settings
 	// deliberately turns it on.
 	bool m_AllowSetOwner = false;
 
+	// Terje player-state actions (only registered when TerjeCore is loaded).
+	// Setting a stat and the full heal both change a player's condition, but
+	// only within the ranges Terje's own admin tools allow, so they start on.
+	bool m_AllowTerjeSetStat = true;
+	bool m_AllowTerjeHeal = true;
+
 	// Where action results are reported. The CFCloud interface cannot display
 	// them - GameLabs only implements the "webhook" response type. Empty means
 	// the server log stays the only output.
