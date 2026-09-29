@@ -42,22 +42,10 @@ class CFCloud_Bridge_VehicleSetOwner extends CFCloud_Bridge_VehicleActionBase
 			return CFCloud_Bridge_Outcome(false, "Besitzerwechsel abgelehnt: keine SteamID64 angegeben.", CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
-		array<Man> players = new array<Man>;
-		g_Game.GetPlayers(players);
-
 		PlayerIdentity target = null;
-		foreach (Man candidate : players)
-		{
-			PlayerIdentity identity = candidate.GetIdentity();
-			if (!identity)
-				continue;
-
-			if (identity.GetPlainId() == steamId)
-			{
-				target = identity;
-				break;
-			}
-		}
+		PlayerBase targetPlayer = PsyCore_Players.FindBySteam64(steamId);
+		if (targetPlayer)
+			target = targetPlayer.GetIdentity();
 
 		if (!target)
 		{

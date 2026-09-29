@@ -13,7 +13,7 @@ class CfgPatches
 		//   "Function 'GLActionRegisterHook' is marked as override, but there is
 		//    no function with this name in the base class".
 		// GameLabs uses the exact same anchor for its own Z_Dependencies addon.
-		requiredAddons[] = {"DZ_Data", "GameLabs_Scripts"};
+		requiredAddons[] = {"DZ_Data", "GameLabs_Scripts", "Psyerns_Core_Module"};
 	};
 };
 

@@ -6,25 +6,19 @@
 // (vanilla RestApi.c:78 notes it), which used to swallow the tail of every
 // longer list. Open this file from the server's file manager to read what an
 // action returned.
+//
+// Stays a file writer of its own (not PsyCore_Log.EnableFile): the file name
+// "Actions_<date>.log" and the block layout are what admins already read.
 class CFCloud_Bridge_ResultLog
 {
 	static string GetPath()
 	{
-		int year;
-		int month;
-		int day;
-		GetYearMonthDay(year, month, day);
-
-		return CFCLOUD_BRIDGE_LOG_DIR + "Actions_" + year.ToString() + "-" + month.ToStringLen(2) + "-" + day.ToStringLen(2) + ".log";
+		return CFCLOUD_BRIDGE_LOG_DIR + "Actions_" + PsyCore_Time.LocalDate() + ".log";
 	}
 
 	static void Write(string actionName, bool success, string headline, string detail)
 	{
-		if (!FileExist(CFCLOUD_BRIDGE_ROOT_FOLDER))
-			MakeDirectory(CFCLOUD_BRIDGE_ROOT_FOLDER);
-
-		if (!FileExist(CFCLOUD_BRIDGE_LOG_DIR))
-			MakeDirectory(CFCLOUD_BRIDGE_LOG_DIR);
+		PsyCore_Paths.EnsureDir(CFCLOUD_BRIDGE_LOG_DIR);
 
 		FileHandle file = OpenFile(GetPath(), FileMode.APPEND);
 		if (!file)
@@ -37,7 +31,7 @@ class CFCloud_Bridge_ResultLog
 		if (success)
 			outcome = "OK";
 
-		FPrintln(file, "[" + CFCloud_Bridge_Logger.GetTimeString() + "] " + actionName + " - " + outcome);
+		FPrintln(file, "[" + PsyCore_Time.LocalClock() + "] " + actionName + " - " + outcome);
 		FPrintln(file, headline);
 
 		array<string> lines = new array<string>;

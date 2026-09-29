@@ -41,27 +41,7 @@ class CFCloud_Bridge_PlayerActionBase extends CFCloud_Bridge_ActionBase
 	//! own GLGetPlayerBySteam64() applies to the order's context player.
 	static PlayerBase CFCloud_Bridge_FindOnlinePlayer(string steamId)
 	{
-		if (steamId == "")
-			return null;
-
-		array<Man> players = new array<Man>;
-		g_Game.GetPlayers(players);
-
-		foreach (Man candidate : players)
-		{
-			PlayerBase player = PlayerBase.Cast(candidate);
-			if (!player)
-				continue;
-
-			PlayerIdentity identity = player.GetIdentity();
-			if (!identity)
-				continue;
-
-			if (identity.GetPlainId() == steamId)
-				return player;
-		}
-
-		return null;
+		return PsyCore_Players.FindBySteam64(steamId);
 	}
 }
 

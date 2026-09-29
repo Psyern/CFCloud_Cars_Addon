@@ -1,4 +1,6 @@
-class CFCloud_Bridge_Settings
+// JSON field names and the path are unchanged ($profile:CFCloud_Bridge\Config\Settings.json).
+// No version field exists, so the config base runs with version 0 (no migration).
+class CFCloud_Bridge_Settings : PsyCore_ConfigBase
 {
 	// 0 = none, 1 = error, 2 = warning, 3 = info, 4 = debug
 	int m_LogLevel = 3;
@@ -53,17 +55,17 @@ class CFCloud_Bridge_Settings
 
 	void MakeDirectoryIfNotExists()
 	{
-		if (!FileExist(CFCLOUD_BRIDGE_ROOT_FOLDER))
-			MakeDirectory(CFCLOUD_BRIDGE_ROOT_FOLDER);
-
-		if (!FileExist(CFCLOUD_BRIDGE_CONFIG_DIR))
-			MakeDirectory(CFCLOUD_BRIDGE_CONFIG_DIR);
+		PsyCore_Paths.EnsureDir(CFCLOUD_BRIDGE_CONFIG_DIR);
 	}
 
 	void Save()
 	{
-		MakeDirectoryIfNotExists();
-		JsonFileLoader<CFCloud_Bridge_Settings>.JsonSaveFile(CFCLOUD_BRIDGE_CONFIG_FILE, this);
+		PsyCore_ConfigLoader<CFCloud_Bridge_Settings>.Save(CFCLOUD_BRIDGE_CONFIG_FILE, this, CFCLOUD_BRIDGE_NAME);
+	}
+
+	override void OnValidate()
+	{
+		Validate();
 	}
 
 	// Clamps values that would break the mod if edited by hand in the JSON.
@@ -84,26 +86,16 @@ class CFCloud_Bridge_Settings
 			m_PlayerDropdownRepublishInterval = 60;
 	}
 
+	// Load -> validate -> write back, as before: the file is always rewritten so
+	// it matches the current schema (fields added since the file was created
+	// appear with their defaults, fields that no longer exist disappear). A
+	// missing file is created with the defaults. New with the core: a file that
+	// cannot be parsed is no longer overwritten - the mod runs on defaults until
+	// the admin fixes it.
 	static CFCloud_Bridge_Settings Load()
 	{
-		CFCloud_Bridge_Settings settings = new CFCloud_Bridge_Settings();
-		settings.MakeDirectoryIfNotExists();
-
-		if (FileExist(CFCLOUD_BRIDGE_CONFIG_FILE))
-		{
-			JsonFileLoader<CFCloud_Bridge_Settings>.JsonLoadFile(CFCLOUD_BRIDGE_CONFIG_FILE, settings);
-			settings.Validate();
-
-			// Write the file back so it always matches the current schema.
-			// Fields added since the file was created appear with their
-			// defaults, fields that no longer exist disappear. Without this an
-			// admin edits keys the mod stopped reading, or never sees the new
-			// ones at all.
-			settings.Save();
-			return settings;
-		}
-
-		settings.Save();
+		CFCloud_Bridge_Settings settings;
+		PsyCore_ConfigLoader<CFCloud_Bridge_Settings>.Load(CFCLOUD_BRIDGE_CONFIG_FILE, settings, "", CFCLOUD_BRIDGE_NAME, true);
 		return settings;
 	}
 }

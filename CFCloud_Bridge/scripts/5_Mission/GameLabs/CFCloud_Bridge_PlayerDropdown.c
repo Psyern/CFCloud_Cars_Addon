@@ -112,15 +112,12 @@ class CFCloud_Bridge_PlayerDropdown
 		if (!g_Game)
 			return result;
 
-		array<Man> players = new array<Man>;
-		g_Game.GetPlayers(players);
+		array<PlayerBase> players = new array<PlayerBase>;
+		PsyCore_Players.GetOnline(players);
 
-		foreach (Man man : players)
+		foreach (PlayerBase player : players)
 		{
-			if (!man)
-				continue;
-
-			PlayerIdentity identity = man.GetIdentity();
+			PlayerIdentity identity = player.GetIdentity();
 			if (!identity)
 				continue;
 

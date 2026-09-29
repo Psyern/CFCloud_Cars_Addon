@@ -1,3 +1,6 @@
+// Thin wrapper around PsyCore_Log (tag "CFCloud_Bridge"). Kept because the
+// settings store the level as 0-4 (m_LogLevel) and because multi-line results
+// are logged one line per entry - PsyCore_Log chunks long lines itself.
 class CFCloud_Bridge_Logger
 {
 	static const int LEVEL_NONE = 0;
@@ -6,11 +9,12 @@ class CFCloud_Bridge_Logger
 	static const int LEVEL_INFO = 3;
 	static const int LEVEL_DEBUG = 4;
 
-	// Leaves room for the prefix below Print()'s 1024-byte cut-off.
-	static const int MAX_LINE = 900;
+	static PsyCore_Log Log()
+	{
+		return PsyCore_Log.Get(CFCLOUD_BRIDGE_NAME);
+	}
 
-	static int s_Level = LEVEL_INFO;
-
+	//! 0 = none, 1 = error, 2 = warning, 3 = info, 4 = debug (Settings.json m_LogLevel)
 	static void SetLevel(int level)
 	{
 		if (level < LEVEL_NONE)
@@ -19,62 +23,68 @@ class CFCloud_Bridge_Logger
 		if (level > LEVEL_DEBUG)
 			level = LEVEL_DEBUG;
 
-		s_Level = level;
+		int coreLevel = PsyCore_LogLevel.INFO;
+		switch (level)
+		{
+			case LEVEL_NONE:
+				coreLevel = PsyCore_LogLevel.NONE;
+				break;
+			case LEVEL_ERROR:
+				coreLevel = PsyCore_LogLevel.ERROR;
+				break;
+			case LEVEL_WARNING:
+				coreLevel = PsyCore_LogLevel.WARN;
+				break;
+			case LEVEL_INFO:
+				coreLevel = PsyCore_LogLevel.INFO;
+				break;
+			case LEVEL_DEBUG:
+				coreLevel = PsyCore_LogLevel.DEBUG;
+				break;
+		}
+
+		Log().SetLevel(coreLevel);
 	}
 
 	static void Error(string message)
 	{
-		LogMessage(LEVEL_ERROR, "ERROR", message);
+		LogMessage(PsyCore_LogLevel.ERROR, message);
 	}
 
 	static void Warning(string message)
 	{
-		LogMessage(LEVEL_WARNING, "WARN", message);
+		LogMessage(PsyCore_LogLevel.WARN, message);
 	}
 
 	static void Info(string message)
 	{
-		LogMessage(LEVEL_INFO, "INFO", message);
+		LogMessage(PsyCore_LogLevel.INFO, message);
 	}
 
 	static void Debug(string message)
 	{
-		LogMessage(LEVEL_DEBUG, "DEBUG", message);
+		LogMessage(PsyCore_LogLevel.DEBUG, message);
 	}
 
-	static void LogMessage(int level, string levelName, string message)
+	static void LogMessage(int coreLevel, string message)
 	{
-		if (level > s_Level)
+		PsyCore_Log logger = Log();
+		if (!logger.IsEnabled(coreLevel))
 			return;
 
-		string timeStamp = GetTimeString();
-
-		// Print() drops everything past 1024 bytes, which used to cut long
-		// lists off mid-entry. One Print per line, long lines in pieces.
+		// One log line per result line, as before; empty lines are skipped.
 		array<string> lines = new array<string>;
 		message.Split("\n", lines);
 
-		foreach (string entry : lines)
+		foreach (string line : lines)
 		{
-			string line = entry;
-			while (line.Length() > MAX_LINE)
-			{
-				PrintFormat("%1 [%2] [%3] %4", timeStamp, CFCLOUD_BRIDGE_NAME, levelName, line.Substring(0, MAX_LINE));
-				line = line.Substring(MAX_LINE, line.Length() - MAX_LINE);
-			}
-
 			if (line != "")
-				PrintFormat("%1 [%2] [%3] %4", timeStamp, CFCLOUD_BRIDGE_NAME, levelName, line);
+				logger.Write(coreLevel, line);
 		}
 	}
 
 	static string GetTimeString()
 	{
-		int hour;
-		int minute;
-		int second;
-		GetHourMinuteSecond(hour, minute, second);
-
-		return hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + ":" + second.ToStringLen(2);
+		return PsyCore_Time.LocalClock();
 	}
 }
