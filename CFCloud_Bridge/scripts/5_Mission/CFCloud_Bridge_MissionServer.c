@@ -10,6 +10,23 @@ modded class MissionServer
 	}
 
 #ifdef GAMELABS
+	// Keeps the online-player dropdowns current. Both hooks exist unchanged
+	// in 1.29 and 1.30 (missionServer.c). On disconnect the player is still
+	// listed by GetPlayers(); the debounced rebuild runs after the body is gone.
+	override void InvokeOnConnect(PlayerBase player, PlayerIdentity identity)
+	{
+		super.InvokeOnConnect(player, identity);
+
+		CFCloud_Bridge_PlayerDropdown.GetInstance().Schedule();
+	}
+
+	override void PlayerDisconnected(PlayerBase player, PlayerIdentity identity, string uid)
+	{
+		super.PlayerDisconnected(player, identity, uid);
+
+		CFCloud_Bridge_PlayerDropdown.GetInstance().Schedule();
+	}
+
 	// GameLabs calls this from the MissionServer CONSTRUCTOR (mission.c:208),
 	// long before OnInit(). Action constructors may therefore only set their
 	// metadata - no world objects, no settings.
@@ -24,6 +41,9 @@ modded class MissionServer
 
 		int registered = 0;
 
+		CFCloud_Bridge_PlayerTeleportToPlayer().Register();
+		registered = registered + 1;
+
 #ifdef EXPANSIONMODVEHICLE
 		CFCloud_Bridge_VehicleUnlock().Register();
 		CFCloud_Bridge_VehicleLock().Register();
@@ -33,6 +53,23 @@ modded class MissionServer
 		registered = registered + 5;
 #else
 		CFCloud_Bridge_Logger.Warning("DayZExpansion Vehicles is missing - no vehicle actions registered.");
+#endif
+
+#ifdef EXPANSIONMODCORE
+		CFCloud_Bridge_ExpansionLoadout().Register();
+		registered = registered + 1;
+#endif
+
+#ifdef EXPANSIONMODBASEBUILDING
+		CFCloud_Bridge_TerritoryInfo().Register();
+		CFCloud_Bridge_PlayerTerritories().Register();
+		CFCloud_Bridge_TerritorySetMember().Register();
+		CFCloud_Bridge_TerritoryRemoveMember().Register();
+		CFCloud_Bridge_TerritoryRefresh().Register();
+		CFCloud_Bridge_TerritoryDelete().Register();
+		registered = registered + 6;
+#else
+		CFCloud_Bridge_Logger.Info("DayZExpansion BaseBuilding is missing - no territory actions registered.");
 #endif
 
 #ifdef TERJE_CORE_MOD

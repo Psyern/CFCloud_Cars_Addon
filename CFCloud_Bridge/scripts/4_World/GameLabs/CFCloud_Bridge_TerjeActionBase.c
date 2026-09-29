@@ -15,33 +15,8 @@
 //
 // Only TERJE_CORE_MOD is required. The IDs an admin can use depend on which
 // Terje modules run on the server - the status action lists them.
-class CFCloud_Bridge_TerjeActionBase extends CFCloud_Bridge_ActionBase
+class CFCloud_Bridge_TerjeActionBase extends CFCloud_Bridge_PlayerActionBase
 {
-	protected bool CFCloud_Bridge_ResolvePlayer(GameLabsActionContext context, out PlayerBase player)
-	{
-		player = null;
-
-		if (!PlayerBase.CastTo(player, context.GetReferencedObject()))
-		{
-			CFCloud_Bridge_Logger.Error(actionCode + ": context is not a player.");
-			return false;
-		}
-
-		if (!player.GetIdentity())
-		{
-			CFCloud_Bridge_Logger.Error(actionCode + ": player has no identity.");
-			return false;
-		}
-
-		return true;
-	}
-
-	protected string CFCloud_Bridge_PlayerLabel(PlayerBase player)
-	{
-		PlayerIdentity identity = player.GetIdentity();
-		return identity.GetName() + " (" + identity.GetPlainId() + ")";
-	}
-
 	//! "terjeSleep=1200/1500" - the ID is what the set action expects.
 	protected string CFCloud_Bridge_FormatStat(TerjeAdmintoolSupport_PlayerStat stat, PlayerBase player)
 	{
@@ -61,10 +36,7 @@ class CFCloud_Bridge_TerjeActionBase extends CFCloud_Bridge_ActionBase
 		string text = "";
 		foreach (TerjeAdmintoolSupport_PlayerStat stat : stats)
 		{
-			if (text != "")
-				text = text + ", ";
-
-			text = text + CFCloud_Bridge_FormatStat(stat, player);
+			text = CFCloud_Bridge_AddLine(text, CFCloud_Bridge_FormatStat(stat, player));
 		}
 
 		return text;

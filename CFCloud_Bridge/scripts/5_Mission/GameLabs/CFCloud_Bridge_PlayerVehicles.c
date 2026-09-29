@@ -6,7 +6,8 @@
 // thanks to CFCloud_Bridge_ExpansionVehicleBase it now contains Expansion
 // aircraft too, so there is nothing to merge or de-duplicate.
 //
-// Read-only, so the result reaches the server log only.
+// Read-only: one vehicle per line in the result file, the server log and the
+// webhook (see CFCloud_Bridge_ActionBase.CFCloud_Bridge_Outcome).
 class CFCloud_Bridge_PlayerVehicles extends CFCloud_Bridge_VehicleActionBase
 {
 	void CFCloud_Bridge_PlayerVehicles()
@@ -54,11 +55,7 @@ class CFCloud_Bridge_PlayerVehicles extends CFCloud_Bridge_VehicleActionBase
 				continue;
 
 			matches++;
-
-			// Discord caps an embed description at 4096 characters. Keep the
-			// webhook readable and let the server log carry the full list.
-			if (detail.Length() < 3000)
-				detail = detail + " || " + CFCloud_Bridge_Describe(vehicle, obj);
+			detail = CFCloud_Bridge_AddLine(detail, CFCloud_Bridge_Describe(vehicle, obj));
 		}
 
 		if (matches == 0)

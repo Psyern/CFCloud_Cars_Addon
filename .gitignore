@@ -1,5 +1,6 @@
 # Documentation and audits are kept locally, not in this repository
 CFCloud_Bridge_Doku/
+CFCloud_Ninjin_Bridge_Doku/
 
 # Claude Code
 .claude/

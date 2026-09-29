@@ -19,6 +19,33 @@ class CFCloud_Bridge_Settings
 	bool m_AllowTerjeSetStat = true;
 	bool m_AllowTerjeHeal = true;
 
+	// Expansion loadout for a player (only registered with Expansion Core).
+	// Can destroy the player's current gear, depending on the chosen mode.
+	bool m_AllowExpansionLoadout = true;
+
+	// Expansion territories (only registered with Expansion BaseBuilding).
+	// Deleting cannot be undone, so it stays off until an admin turns it on.
+	bool m_AllowTerritoryMembers = true;
+	bool m_AllowTerritoryRefresh = true;
+	bool m_AllowTerritoryDelete = false;
+
+	// Teleport player X to online player Y. Needs only GameLabs.
+	bool m_AllowTeleportToPlayer = true;
+
+	// Online-player dropdowns (teleport target). Seconds to wait after a
+	// connect/disconnect before the list is rebuilt - a burst of joins after
+	// a restart then ends in one rebuild.
+	int m_PlayerDropdownDelay = 30;
+
+	// GameLabs sends its action list - and with it the dropdown - to CFCloud
+	// only at startup and when it re-authorises. When true, the mod triggers
+	// that re-authorisation itself after the player list changed, at most once
+	// per m_PlayerDropdownRepublishInterval seconds. When false, the dropdown
+	// only reaches CFCloud whenever GameLabs re-registers on its own; the
+	// SteamID64 field of the teleport action works either way.
+	bool m_PlayerDropdownRepublish = true;
+	int m_PlayerDropdownRepublishInterval = 300;
+
 	// Where action results are reported. The CFCloud interface cannot display
 	// them - GameLabs only implements the "webhook" response type. Empty means
 	// the server log stays the only output.
@@ -47,6 +74,14 @@ class CFCloud_Bridge_Settings
 
 		if (m_LogLevel > CFCloud_Bridge_Logger.LEVEL_DEBUG)
 			m_LogLevel = CFCloud_Bridge_Logger.LEVEL_DEBUG;
+
+		if (m_PlayerDropdownDelay < 5)
+			m_PlayerDropdownDelay = 5;
+
+		// Every re-registration briefly swaps GameLabs' auth header, so it is
+		// never allowed to run more often than once a minute.
+		if (m_PlayerDropdownRepublishInterval < 60)
+			m_PlayerDropdownRepublishInterval = 60;
 	}
 
 	static CFCloud_Bridge_Settings Load()

@@ -48,5 +48,12 @@ class CFCloud_Bridge_Manager
 		m_Initialized = true;
 
 		CFCloud_Bridge_Logger.Info("Initialized - version " + CFCLOUD_BRIDGE_VERSION);
+
+		// CFCloud itself never shows what an action returned. Say once, at
+		// startup, where the results can be read instead.
+		if (m_Settings.m_DiscordWebhookUrl == "")
+			CFCloud_Bridge_Logger.Warning("No m_DiscordWebhookUrl set - action results go to " + CFCLOUD_BRIDGE_LOG_DIR + "Actions_<date>.log and this log only.");
+		else
+			CFCloud_Bridge_Logger.Info("Action results go to the Discord webhook and to " + CFCLOUD_BRIDGE_LOG_DIR + "Actions_<date>.log.");
 	}
 }

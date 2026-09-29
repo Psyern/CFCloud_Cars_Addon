@@ -36,7 +36,7 @@ class CFCloud_Bridge_TerjeHeal extends CFCloud_Bridge_TerjeActionBase
 
 		string after = CFCloud_Bridge_DescribeStats(player);
 
-		return CFCloud_Bridge_Outcome(true, "Terje-Heilung ausgefuehrt fuer " + label + ".", "Vorher: " + before + " || Nachher: " + after);
+		return CFCloud_Bridge_Outcome(true, "Terje-Heilung ausgefuehrt fuer " + label + ".", "Vorher:\n" + before + "\nNachher:\n" + after);
 	}
 }
 
