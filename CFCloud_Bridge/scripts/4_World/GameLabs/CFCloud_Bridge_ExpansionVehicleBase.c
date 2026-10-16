@@ -33,7 +33,8 @@ modded class ExpansionVehicleBase
 			return;
 
 		string icon = "helicopter";
-		if (IsInherited(ExpansionVehiclePlaneBase))
+		// Config check by name: the script class ExpansionVehiclePlaneBase no longer exists in Expansion 1.9.79
+		if (IsKindOf("ExpansionVehiclePlaneBase"))
 			icon = "plane";
 
 		// vehicleType stays "car" on purpose: _Vehicle.SetVehicleType() accepts
