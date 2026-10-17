@@ -58,6 +58,11 @@ class CFCloud_Bridge_WebhookCallback extends RestCallback
 //    boundaries, one embed per message, sent a moment apart so the webhook's
 //    rate limit (5 requests per 2 s) is never hit.
 //  * Every failure is logged now, with the engine's REST state.
+//
+// Deliberately not PsyCore_Discord: its callback logs failures as WARN with a
+// fixed text (an m_LogLevel of 1 would hide them, and the hint to the settings
+// key and the result file would be gone), and the payload follows GameLabs' own
+// classes (username/avatar) on purpose.
 class CFCloud_Bridge_Report
 {
 	private static const int COLOUR_SUCCESS = 3066993;   // Discord green

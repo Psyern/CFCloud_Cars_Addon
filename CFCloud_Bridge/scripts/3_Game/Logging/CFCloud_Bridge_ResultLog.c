@@ -7,8 +7,11 @@
 // longer list. Open this file from the server's file manager to read what an
 // action returned.
 //
-// Stays a file writer of its own (not PsyCore_Log.EnableFile): the file name
-// "Actions_<date>.log" and the block layout are what admins already read.
+// The block goes through PsyCore_FS.AppendLines: append mode, one FPrintln per
+// entry - the same bytes the former own writer produced. Not PsyCore_Log.EnableFile:
+// that puts the time in front of every file line and copies each line into the
+// server log, while the file name "Actions_<date>.log" and the block layout are
+// what admins already read.
 class CFCloud_Bridge_ResultLog
 {
 	static string GetPath()
@@ -20,29 +23,25 @@ class CFCloud_Bridge_ResultLog
 	{
 		PsyCore_Paths.EnsureDir(CFCLOUD_BRIDGE_LOG_DIR);
 
-		FileHandle file = OpenFile(GetPath(), FileMode.APPEND);
-		if (!file)
-		{
-			CFCloud_Bridge_Logger.Error("Could not open the result file " + GetPath());
-			return;
-		}
-
 		string outcome = "REFUSED";
 		if (success)
 			outcome = "OK";
 
-		FPrintln(file, "[" + PsyCore_Time.LocalClock() + "] " + actionName + " - " + outcome);
-		FPrintln(file, headline);
+		array<string> block = new array<string>;
+		block.Insert("[" + PsyCore_Time.LocalClock() + "] " + actionName + " - " + outcome);
+		block.Insert(headline);
 
 		array<string> lines = new array<string>;
 		detail.Split("\n", lines);
 		foreach (string line : lines)
 		{
 			if (line != "")
-				FPrintln(file, "    " + line);
+				block.Insert("    " + line);
 		}
 
-		FPrintln(file, "");
-		CloseFile(file);
+		block.Insert("");
+
+		if (!PsyCore_FS.AppendLines(GetPath(), block))
+			CFCloud_Bridge_Logger.Error("Could not open the result file " + GetPath());
 	}
 }
